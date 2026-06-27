@@ -1,0 +1,212 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Area";
+  src: url("/fonts/Area-Normal-Regular.otf") format("opentype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: "Area";
+  src: url("/fonts/Area-Normal-Bold.otf") format("opentype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 800;
+}
+
+@font-face {
+  font-family: "Area";
+  src: url("/fonts/Area-Normal-Regular-Italic.otf") format("opentype");
+  font-display: swap;
+  font-style: italic;
+  font-weight: 400;
+}
+
+@theme inline {
+  --font-sans: "Area", "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
+}
+
+:root {
+  color-scheme: dark;
+  --background: #050504;
+  --foreground: #f4eadb;
+  --muted: #9c9588;
+  --line: rgba(244, 234, 219, 0.2);
+  --panel: rgba(8, 8, 7, 0.88);
+  --accent: #f41422;
+  --accent-strong: #fff1df;
+  --ink: #050504;
+  --paper: #eadcc8;
+  --oxide: #5b120d;
+  --club-yellow: #d5c04f;
+  --deep-green: #0c1714;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: var(--background);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(5, 5, 4, 0.22), #050504 48rem),
+    repeating-linear-gradient(98deg, rgba(244, 20, 34, 0.055) 0 1px, transparent 1px 23px),
+    radial-gradient(circle at 16% 8%, rgba(244, 20, 34, 0.2), transparent 22rem),
+    radial-gradient(circle at 78% 18%, rgba(213, 192, 79, 0.1), transparent 18rem),
+    #050504;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--ink);
+}
+
+.focus-ring {
+  outline: 2px solid transparent;
+  outline-offset: 3px;
+}
+
+.focus-ring:focus-visible {
+  outline-color: var(--accent);
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.shell {
+  width: min(1240px, calc(100vw - 28px));
+  margin-inline: auto;
+}
+
+.panel {
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(244, 234, 219, 0.035), rgba(244, 234, 219, 0.008)),
+    var(--panel);
+  border-radius: 4px;
+}
+
+.grain {
+  position: relative;
+}
+
+.grain::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.22;
+  mix-blend-mode: overlay;
+  background-image:
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 7px 7px, 38px 38px, 38px 38px;
+}
+
+.hero-fallback {
+  background:
+    linear-gradient(130deg, rgba(5, 5, 4, 0.2), rgba(5, 5, 4, 0.94)),
+    repeating-linear-gradient(100deg, rgba(244, 20, 34, 0.13) 0 2px, transparent 2px 18px),
+    repeating-linear-gradient(8deg, rgba(213, 192, 79, 0.09) 0 1px, transparent 1px 26px),
+    #080807;
+}
+
+.xosa-logo {
+  filter: drop-shadow(0.04em 0.05em 0 rgba(244, 20, 34, 0.9))
+    drop-shadow(-0.02em -0.02em 0 rgba(213, 192, 79, 0.42));
+}
+
+.area-italic {
+  font-family: "Area", ui-sans-serif, system-ui, sans-serif;
+  font-style: italic;
+}
+
+.poster-frame {
+  border: 1px solid rgba(244, 234, 219, 0.24);
+  box-shadow:
+    0 18px 60px rgba(0, 0, 0, 0.45),
+    0 0 0 5px rgba(244, 20, 34, 0.09);
+  transform: rotate(-1.25deg);
+}
+
+.red-spray {
+  background:
+    radial-gradient(circle at 18% 68%, rgba(244, 20, 34, 0.88) 0 2px, transparent 2px),
+    radial-gradient(circle at 70% 35%, rgba(244, 20, 34, 0.72) 0 1px, transparent 1px);
+  background-size: 13px 11px, 7px 9px;
+}
+
+.tear-rule {
+  height: 10px;
+  background:
+    linear-gradient(90deg, transparent 0 2%, var(--accent) 2% 8%, transparent 8% 13%, var(--accent) 13% 38%, transparent 38% 43%, var(--accent) 43% 72%, transparent 72% 76%, var(--accent) 76% 100%);
+  clip-path: polygon(0 30%, 8% 52%, 16% 22%, 24% 66%, 36% 34%, 44% 78%, 55% 30%, 68% 56%, 76% 26%, 86% 70%, 100% 38%, 100% 100%, 0 100%);
+}
+
+.marquee {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.marquee span {
+  display: inline-block;
+  animation: marquee 28s linear infinite;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .motion-video {
+    display: none;
+  }
+
+  .marquee span {
+    animation: none;
+  }
+}
