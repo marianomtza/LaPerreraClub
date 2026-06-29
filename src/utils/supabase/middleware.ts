@@ -12,7 +12,12 @@ export const updateSession = async (request: NextRequest) => {
     }
   });
 
-  const supabase = createServerClient(supabaseUrl!, supabaseKey!, {
+  // Keep public routes working when Supabase auth is not configured in the environment.
+  if (!supabaseUrl || !supabaseKey) {
+    return supabaseResponse;
+  }
+
+  const supabase = createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
