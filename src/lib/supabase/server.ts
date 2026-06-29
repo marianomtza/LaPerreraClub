@@ -3,14 +3,18 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 let publicClient: SupabaseClient | null = null;
 let serviceClient: SupabaseClient | null = null;
 
+function getPublicSupabaseKey() {
+  return process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+}
+
 export function hasPublicSupabaseConfig() {
-  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && getPublicSupabaseKey());
 }
 
 export function hasServiceSupabaseConfig() {
   return Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+      getPublicSupabaseKey() &&
       process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 }
@@ -21,7 +25,7 @@ export function getPublicSupabase() {
   if (!publicClient) {
     publicClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      getPublicSupabaseKey()!,
       {
         auth: {
           autoRefreshToken: false,
