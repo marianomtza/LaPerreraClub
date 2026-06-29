@@ -3,6 +3,16 @@ import { Headphones } from "lucide-react";
 import type { LinkItem, ReleaseContent } from "@/lib/content-types";
 import { isValidHttpUrl } from "@/lib/url";
 
+export function isSpotifyReleaseUrl(url: string | undefined) {
+  if (!url || !isValidHttpUrl(url)) return false;
+  return /open\.spotify\.com\/(album|track|playlist|episode|show)\//.test(url);
+}
+
+export function isAppleMusicReleaseUrl(url: string | undefined) {
+  if (!url || !isValidHttpUrl(url)) return false;
+  return !/music\.apple\.com\/[^/]+\/artist\//.test(url);
+}
+
 export function StreamingLinks({ links }: { links: LinkItem[] }) {
   const validLinks = links.filter((link) => isValidHttpUrl(link.url));
   if (validLinks.length === 0) return null;
@@ -26,8 +36,9 @@ export function StreamingLinks({ links }: { links: LinkItem[] }) {
 }
 
 export function SpotifyEmbed({ url, title }: { url?: string; title: string }) {
-  if (!url || !isValidHttpUrl(url)) return null;
-  const embedUrl = url.includes("/embed/") ? url : url.replace("open.spotify.com/", "open.spotify.com/embed/");
+  if (!isSpotifyReleaseUrl(url)) return null;
+  const safeUrl = url || "";
+  const embedUrl = safeUrl.includes("/embed/") ? safeUrl : safeUrl.replace("open.spotify.com/", "open.spotify.com/embed/");
 
   return (
     <iframe
@@ -41,8 +52,9 @@ export function SpotifyEmbed({ url, title }: { url?: string; title: string }) {
 }
 
 export function AppleMusicEmbed({ url, title }: { url?: string; title: string }) {
-  if (!url || !isValidHttpUrl(url)) return null;
-  const embedUrl = url.includes("embed.music.apple.com") ? url : url.replace("music.apple.com", "embed.music.apple.com");
+  if (!isAppleMusicReleaseUrl(url)) return null;
+  const safeUrl = url || "";
+  const embedUrl = safeUrl.includes("embed.music.apple.com") ? safeUrl : safeUrl.replace("music.apple.com", "embed.music.apple.com");
 
   return (
     <iframe

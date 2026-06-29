@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import sharp from "sharp";
+import { siteCopy } from "@/content/site-copy";
 import { requireAdminUser } from "@/lib/auth";
 import { getServiceSupabase } from "@/lib/supabase/server";
 
@@ -10,7 +11,10 @@ const MAX_BYTES = 8 * 1024 * 1024;
 export async function POST(request: Request) {
   await requireAdminUser();
   const supabase = getServiceSupabase();
-  if (!supabase) return NextResponse.json({ message: "Supabase no está configurado." }, { status: 503 });
+  if (!supabase) {
+    console.error("Admin media upload blocked: Supabase service client is not configured.");
+    return NextResponse.json({ message: siteCopy.global.system.unavailable }, { status: 503 });
+  }
 
   const formData = await request.formData();
   const file = formData.get("file");
@@ -48,7 +52,8 @@ export async function POST(request: Request) {
   });
 
   if (upload.error && upload.error.message !== "The resource already exists") {
-    return NextResponse.json({ message: upload.error.message }, { status: 500 });
+    console.error("Admin media upload failed.", upload.error.message);
+    return NextResponse.json({ message: siteCopy.global.system.genericError }, { status: 500 });
   }
 
   const publicUrl = supabase.storage.from("media").getPublicUrl(storagePath).data.publicUrl;
@@ -68,6 +73,9 @@ export async function POST(request: Request) {
     .select("*")
     .single();
 
-  if (error) return NextResponse.json({ message: error.message }, { status: 500 });
+  if (error) {
+    console.error("Admin media metadata insert failed.", error.message);
+    return NextResponse.json({ message: siteCopy.global.system.genericError }, { status: 500 });
+  }
   return NextResponse.json({ asset: data });
 }

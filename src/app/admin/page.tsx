@@ -1,5 +1,6 @@
 import { Box, FileUp, LogOut, Package, RadioTower, Settings, Users } from "lucide-react";
 import Link from "next/link";
+import { siteCopy } from "@/content/site-copy";
 import { getAdminUser } from "@/lib/auth";
 import { getAdminCollections, getHomeSettings, getXosaSettings } from "@/lib/data";
 import { hasPublicSupabaseConfig, hasServiceSupabaseConfig } from "@/lib/supabase/server";
@@ -32,9 +33,9 @@ export default async function AdminPage({
     return (
       <main className="shell flex min-h-[72vh] flex-col justify-center gap-5 py-16">
         <p className="font-mono text-xs uppercase text-[var(--accent)]">Panel</p>
-        <h1 className="text-5xl font-black uppercase leading-none">Configura Supabase</h1>
+        <h1 className="text-5xl font-black uppercase leading-none">Panel no disponible</h1>
         <p className="max-w-2xl text-[var(--muted)]">
-          Agrega `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` para activar el acceso por correo.
+          {siteCopy.admin.unavailable}
         </p>
       </main>
     );
@@ -90,7 +91,7 @@ export default async function AdminPage({
       {error ? <p className="panel mb-4 border-red-200 p-4 text-sm text-red-100">{error}</p> : null}
       {!hasServiceSupabaseConfig() ? (
         <p className="panel mb-4 border-red-200 p-4 text-sm text-red-100">
-          Falta `SUPABASE_SERVICE_ROLE_KEY`; las acciones de escritura quedan bloqueadas.
+          {siteCopy.admin.serviceUnavailable}
         </p>
       ) : null}
 
@@ -200,7 +201,7 @@ export default async function AdminPage({
                     <p className="font-mono text-xs text-[var(--muted)]">{order.id}</p>
                     <p className="font-black">{order.customer_email}</p>
                   </div>
-                  <Select compact name="status" options={["pendiente", "pagado", "en_preparacion", "enviado", "entregado", "cancelado", "reembolsado"]} />
+                  <Select compact name="status" options={["pendiente", "pagado", "en_revision", "en_preparacion", "enviado", "entregado", "cancelado", "reembolsado"]} />
                   <SubmitButton label="Guardar" />
                 </form>
               ))}

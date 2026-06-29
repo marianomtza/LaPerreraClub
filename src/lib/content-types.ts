@@ -61,11 +61,13 @@ export type BookingSettings = {
   pressKitUrl?: string;
   riderUrl?: string;
   assetsUrl?: string;
+  responseTime?: string;
 };
 
 export type StoreSettings = {
   emptyMessage?: string;
   featuredProductIds?: string[];
+  pickupEnabled?: boolean;
 };
 
 export type SeoSettings = {

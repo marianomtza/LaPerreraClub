@@ -1,8 +1,8 @@
 import Link from "next/link";
+import { siteCopy } from "@/content/site-copy";
 import type { HomeSettings } from "@/lib/content-types";
 import { isSafeHref } from "@/lib/url";
 import { SmartImage } from "@/components/media/smart-image";
-import { XosaMark } from "@/components/brand/xosa-mark";
 
 export function HomeHero({
   settings,
@@ -15,7 +15,7 @@ export function HomeHero({
 }) {
   const hero = settings.hero || {};
   const primaryHref = hero.primaryHref || "/#club";
-  const secondaryHref = hero.secondaryHref || "/#contenido";
+  const secondaryHref = hero.secondaryHref || "/xosa";
   const statusItems = (hero.statusItems || []).filter(Boolean);
 
   return (
@@ -45,31 +45,28 @@ export function HomeHero({
                 {hero.eyebrow}
               </p>
             ) : null}
-            <div className="max-w-[760px]">
-              <XosaMark priority />
-            </div>
             <h1 className="mt-5 text-balance text-5xl font-black uppercase leading-[0.86] md:text-7xl lg:text-[7.5rem]">
-              <span className="block">La Perrera</span>
-              <span className="block text-[var(--accent)]">Club</span>
+              <span className="block">{siteCopy.home.hero.titleLineOne}</span>
+              <span className="block text-[var(--accent)]">{siteCopy.home.hero.titleLineTwo}</span>
             </h1>
             <p className="area-italic mt-5 max-w-2xl text-xl text-[var(--paper)] md:text-2xl">
-              Música, club, comunidad, drops y booking. Una operación de noche, show y cultura digital.
+              {siteCopy.home.hero.copy}
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               {isSafeHref(primaryHref) ? (
                 <Link
-                className="focus-ring inline-flex min-h-12 items-center rounded-[4px] bg-[var(--accent)] px-5 text-sm font-black uppercase text-white shadow-[0_0_34px_rgba(244,20,34,0.36)]"
+                  className="focus-ring inline-flex min-h-12 items-center rounded-[4px] bg-[var(--accent)] px-5 text-sm font-black uppercase text-white shadow-[0_0_34px_rgba(244,20,34,0.36)]"
                   href={primaryHref}
                 >
-                  {hero.primaryLabel || "Entrar al club"}
+                  {hero.primaryLabel || siteCopy.home.hero.primaryLabel}
                 </Link>
               ) : null}
               {isSafeHref(secondaryHref) ? (
                 <Link
-                className="focus-ring inline-flex min-h-12 items-center rounded-[4px] border border-white/24 bg-black/24 px-5 text-sm font-black uppercase text-white backdrop-blur"
+                  className="focus-ring inline-flex min-h-12 items-center rounded-[4px] border border-white/24 bg-black/24 px-5 text-sm font-black uppercase text-white backdrop-blur"
                   href={secondaryHref}
                 >
-                  {hero.secondaryLabel || "Explorar"}
+                  {hero.secondaryLabel || siteCopy.home.hero.secondaryLabel}
                 </Link>
               ) : null}
             </div>
@@ -82,7 +79,7 @@ export function HomeHero({
                 className="aspect-[3/4] h-full w-full object-cover"
                 height={920}
                 priority
-                src="/assets/booking-xosa.webp"
+                src={posterUrl}
                 width={690}
               />
             </div>

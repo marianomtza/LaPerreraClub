@@ -1,5 +1,7 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Briefcase, Disc3 } from "lucide-react";
+import { siteCopy } from "@/content/site-copy";
 import { BandsintownDates } from "@/components/integrations/bandsintown-dates";
 import { releaseLinks, SpotifyEmbed, StreamingLinks } from "@/components/music/music-embeds";
 import { PublicationList } from "@/components/content/publication-list";
@@ -14,23 +16,30 @@ import {
   getLocalHeroPoster,
   getLocalHeroVideo,
   getProducts,
-  getStoreSettings,
   getXosaSettings
 } from "@/lib/data";
 
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/"
+  }
+};
+
 export default async function HomePage() {
-  const [home, xosa, products, publications, store] = await Promise.all([
+  const [home, xosa, products, publications] = await Promise.all([
     getHomeSettings(),
     getXosaSettings(),
     getProducts({ featuredOnly: true, limit: 3 }),
-    getActivePublications("inicio"),
-    getStoreSettings()
+    getActivePublications("inicio")
   ]);
 
   const release = home.activeRelease;
   const modules = home.modules || {};
   const heroVideo = home.hero?.videoUrl || getLocalHeroVideo();
   const heroPoster = home.hero?.posterUrl || getLocalHeroPoster();
+  const bandsintownArtist = process.env.NEXT_PUBLIC_BANDSINTOWN_ARTIST_NAME;
+  const bandsintownAppId = process.env.NEXT_PUBLIC_BANDSINTOWN_APP_ID;
+  const hasBandsintownConfig = Boolean(bandsintownArtist && bandsintownAppId);
 
   return (
     <main>
@@ -40,12 +49,9 @@ export default async function HomePage() {
         {release?.title && modules.release !== false ? (
           <section className="grid gap-8 border-b border-white/10 pb-16 lg:grid-cols-[0.85fr_1.15fr]">
             <div className="flex flex-col justify-between">
-              <SectionHeading eyebrow="Ahora" title={release.title} copy={release.description} />
+              <SectionHeading eyebrow={siteCopy.home.now.eyebrow} title={release.title} copy={release.description} />
               <div className="grid gap-4">
                 <StreamingLinks links={releaseLinks(release)} />
-                <p className="max-w-md text-sm uppercase tracking-[0.16em] text-white/58">
-                  Pieza activa editable desde el panel.
-                </p>
               </div>
             </div>
             <div className="relative grid gap-4">
@@ -69,23 +75,23 @@ export default async function HomePage() {
           <section className="grid gap-8 border-b border-white/10 py-16 lg:grid-cols-[1fr_0.9fr]">
             <div>
               <SectionHeading
-                eyebrow="Proyecto musical"
+                eyebrow={siteCopy.home.xosa.eyebrow}
                 title={xosa.title || "XOSA"}
-                copy={xosa.bio || "Figura principal actual de La Perrera Club."}
+                copy={xosa.bio || siteCopy.home.xosa.fallbackBio}
               />
               <div className="flex flex-wrap gap-3">
                 <Link
                   className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-[8px] bg-white px-4 text-sm font-black uppercase text-black"
                   href="/xosa"
                 >
-                  Ver XOSA
+                  {siteCopy.home.hero.secondaryLabel}
                   <ArrowRight aria-hidden="true" size={16} />
                 </Link>
                 <Link
                   className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-[8px] border border-white/15 px-4 text-sm font-black uppercase"
                   href="/booking"
                 >
-                  Booking
+                  {siteCopy.global.navigation.booking}
                   <Briefcase aria-hidden="true" size={16} />
                 </Link>
               </div>
@@ -109,33 +115,29 @@ export default async function HomePage() {
           </section>
         ) : null}
 
-        {modules.dates !== false ? (
+        {modules.dates !== false && hasBandsintownConfig ? (
           <section className="border-b border-white/10 py-16" id="fechas">
-            <SectionHeading eyebrow="Presentaciones" title="Próximas fechas" />
+            <SectionHeading eyebrow={siteCopy.home.dates.eyebrow} title={siteCopy.home.dates.title} />
             <BandsintownDates
-              appId={process.env.NEXT_PUBLIC_BANDSINTOWN_APP_ID}
-              artistName={process.env.NEXT_PUBLIC_BANDSINTOWN_ARTIST_NAME}
+              appId={bandsintownAppId}
+              artistName={bandsintownArtist}
             />
           </section>
         ) : null}
 
-        {modules.store !== false && (products.length > 0 || store.emptyMessage) ? (
+        {modules.store !== false && products.length > 0 ? (
           <section className="border-b border-white/10 py-16">
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-              <SectionHeading eyebrow="Tienda" title="Drop actual" />
+              <SectionHeading eyebrow={siteCopy.home.store.eyebrow} title={siteCopy.home.store.title} />
               <Link className="focus-ring font-black uppercase text-[var(--accent)]" href="/tienda">
-                Ver tienda
+                {siteCopy.home.store.cta}
               </Link>
             </div>
-            {products.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-3">
-                {products.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            ) : (
-              <p className="panel p-5 text-[var(--muted)]">{store.emptyMessage}</p>
-            )}
+            <div className="grid gap-4 md:grid-cols-3">
+              {products.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
           </section>
         ) : null}
 
@@ -149,9 +151,9 @@ export default async function HomePage() {
         {modules.club !== false ? (
           <section className="grid gap-8 border-b border-white/10 py-16 lg:grid-cols-[0.9fr_1.1fr]" id="club">
             <SectionHeading
-              eyebrow="Club"
-              title="Relación directa"
-              copy="Únete a la lista para recibir lanzamientos, drops, preventas y movimientos de La Perrera Club."
+              eyebrow={siteCopy.home.club.eyebrow}
+              title={siteCopy.home.club.title}
+              copy={siteCopy.home.club.copy}
             />
             <ClubForm />
           </section>
@@ -160,14 +162,14 @@ export default async function HomePage() {
         {modules.booking !== false ? (
           <section className="grid gap-5 py-16 md:grid-cols-[1fr_auto] md:items-center">
             <div>
-              <p className="font-mono text-xs uppercase text-[var(--accent)]">Booking</p>
-              <h2 className="mt-3 text-4xl font-black uppercase leading-none">Solicitudes profesionales</h2>
+              <p className="font-mono text-xs uppercase text-[var(--accent)]">{siteCopy.home.booking.eyebrow}</p>
+              <h2 className="mt-3 text-4xl font-black uppercase leading-none">{siteCopy.home.booking.title}</h2>
             </div>
             <Link
               className="focus-ring inline-flex min-h-12 items-center justify-center rounded-[8px] bg-[var(--accent-strong)] px-5 text-sm font-black uppercase text-white"
               href="/booking"
             >
-              Ir a booking
+              {siteCopy.home.booking.cta}
             </Link>
           </section>
         ) : null}

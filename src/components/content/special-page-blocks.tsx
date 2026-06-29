@@ -154,11 +154,15 @@ export async function SpecialPageBlocks({ blocks }: { blocks: SpecialPageBlock[]
     }
 
     if (block.type === "bandsintown") {
-      rendered.push(
-        <section className="border-b border-white/10 py-12" key={key}>
-          <BandsintownDates appId={process.env.NEXT_PUBLIC_BANDSINTOWN_APP_ID} artistName={process.env.NEXT_PUBLIC_BANDSINTOWN_ARTIST_NAME} />
-        </section>
-      );
+      const artistName = process.env.NEXT_PUBLIC_BANDSINTOWN_ARTIST_NAME;
+      const appId = process.env.NEXT_PUBLIC_BANDSINTOWN_APP_ID;
+      if (artistName && appId) {
+        rendered.push(
+          <section className="border-b border-white/10 py-12" key={key}>
+            <BandsintownDates appId={appId} artistName={artistName} />
+          </section>
+        );
+      }
     }
 
     if (block.type === "club_form") {

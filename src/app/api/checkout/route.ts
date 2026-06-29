@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { siteCopy } from "@/content/site-copy";
 import { getServerEnv } from "@/lib/env";
 import { sendEmail, wrapEmail } from "@/lib/email";
 import { getCartVariants } from "@/lib/data";
@@ -8,8 +9,8 @@ import { getServiceSupabase } from "@/lib/supabase/server";
 import { checkoutSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
-  if (!checkRateLimit(`checkout:${getRequestIp(request)}`, 10, 60_000)) {
-    return NextResponse.json({ message: "Intenta de nuevo en un minuto." }, { status: 429 });
+  if (!(await checkRateLimit(`checkout:${getRequestIp(request)}`, 10, 60_000))) {
+    return NextResponse.json({ message: siteCopy.global.system.rateLimited }, { status: 429 });
   }
 
   const parsed = checkoutSchema.safeParse(await request.json().catch(() => ({})));
@@ -19,22 +20,28 @@ export async function POST(request: Request) {
 
   const supabase = getServiceSupabase();
   if (!supabase) {
-    return NextResponse.json({ message: "Supabase no está configurado para crear pedidos." }, { status: 503 });
+    console.error("Checkout blocked: Supabase service client is not configured.");
+    return NextResponse.json({ message: siteCopy.global.system.unavailable }, { status: 503 });
   }
 
   const checkout = parsed.data;
   const variantIds = checkout.items.map((item) => item.variantId);
   const variants = await getCartVariants(variantIds);
 
-  const normalizedItems = checkout.items.map((item) => {
+  const normalizedItems: Array<{ request: (typeof checkout.items)[number]; variant: (typeof variants)[number] }> = [];
+  for (const item of checkout.items) {
     const variant = variants.find((entry) => entry.id === item.variantId);
-    if (!variant) throw new Error("Producto no disponible.");
-    if (variant.products.status !== "publicado") throw new Error("Producto no disponible para compra.");
-    if (variant.track_inventory && item.quantity > variant.stock_quantity) {
-      throw new Error(`Inventario insuficiente para ${variant.products.name}.`);
+    if (!variant) {
+      return NextResponse.json({ message: "Producto no disponible." }, { status: 400 });
     }
-    return { request: item, variant };
-  });
+    if (variant.products.status !== "publicado") {
+      return NextResponse.json({ message: "Producto no disponible para compra." }, { status: 400 });
+    }
+    if (variant.track_inventory && item.quantity > variant.stock_quantity) {
+      return NextResponse.json({ message: `Inventario insuficiente para ${variant.products.name}.` }, { status: 400 });
+    }
+    normalizedItems.push({ request: item, variant });
+  }
 
   const subtotalCents = normalizedItems.reduce(
     (sum, item) => sum + item.variant.price_cents * item.request.quantity,
@@ -54,7 +61,8 @@ export async function POST(request: Request) {
 
   const shippingRule = shippingRules?.[0] as { price_cents: number; free_from_cents: number | null } | undefined;
   if (!checkout.pickup && !shippingRule) {
-    return NextResponse.json({ message: "Configura al menos una tarifa de envío antes de vender." }, { status: 503 });
+    console.error("Checkout blocked: no active shipping rule is available.");
+    return NextResponse.json({ message: "El envío no está disponible en este momento." }, { status: 503 });
   }
 
   const shippingCents = checkout.pickup
@@ -80,13 +88,17 @@ export async function POST(request: Request) {
       notes: checkout.customer.notes,
       subtotal_cents: subtotalCents,
       shipping_cents: shippingCents,
-      total_cents: totalCents
+      total_cents: totalCents,
+      idempotency_key: checkout.idempotencyKey || null
     })
     .select("*")
     .single();
 
   if (orderError || !order) {
     console.error("No se pudo crear pedido.", orderError?.message);
+    if (orderError?.code === "23505") {
+      return NextResponse.json({ message: "Este pedido ya está en proceso." }, { status: 409 });
+    }
     return NextResponse.json({ message: "No se pudo crear el pedido." }, { status: 500 });
   }
 
@@ -105,6 +117,7 @@ export async function POST(request: Request) {
 
   if (itemsError) {
     console.error("No se pudieron crear partidas de pedido.", itemsError.message);
+    await supabase.from("orders").update({ order_status: "cancelado", payment_status: "cancelado" }).eq("id", order.id);
     return NextResponse.json({ message: "No se pudieron guardar los productos del pedido." }, { status: 500 });
   }
 
@@ -120,6 +133,7 @@ export async function POST(request: Request) {
   });
 
   if (!preference.ok || !preference.initPoint) {
+    await supabase.from("orders").update({ order_status: "en_revision" }).eq("id", order.id);
     return NextResponse.json({ message: preference.message }, { status: 503 });
   }
 
@@ -131,7 +145,7 @@ export async function POST(request: Request) {
   if (getServerEnv("ORDERS_NOTIFICATION_EMAIL")) {
     await sendEmail({
       to: getServerEnv("ORDERS_NOTIFICATION_EMAIL"),
-      subject: "Nuevo pedido pendiente",
+      subject: siteCopy.emails.orderPendingSubject,
       html: wrapEmail("Pedido pendiente", `<p>Pedido ${order.id} creado por ${checkout.customer.email}. Total: ${totalCents / 100} MXN.</p>`)
     });
   }

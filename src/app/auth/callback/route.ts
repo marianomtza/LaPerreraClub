@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSiteUrl } from "@/lib/env";
+import { getSiteUrl, isAdminEmailAllowed } from "@/lib/env";
 import { setAdminSessionCookies } from "@/lib/auth";
 import { getPublicSupabase } from "@/lib/supabase/server";
 
@@ -14,6 +14,10 @@ export async function GET(request: Request) {
 
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
   if (error || !data.session) {
+    return NextResponse.redirect(`${getSiteUrl()}/admin?error=auth`);
+  }
+
+  if (!isAdminEmailAllowed(data.user?.email)) {
     return NextResponse.redirect(`${getSiteUrl()}/admin?error=auth`);
   }
 

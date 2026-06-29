@@ -11,27 +11,44 @@ const optionalUrl = z
   });
 
 export const clubSubmissionSchema = z.object({
-  name: z.string().trim().min(2, "Escribe tu nombre.").max(120),
+  name: z.string().trim().max(120).optional().default(""),
   email: z.email("Escribe un correo válido.").max(180),
   city: z.string().trim().min(2, "Escribe tu ciudad.").max(120),
   socialHandle: z.string().trim().max(120).optional().default(""),
-  discoverySource: z.string().trim().min(2, "Cuéntanos cómo llegaste.").max(220),
+  discoverySource: z.string().trim().max(220).optional().default(""),
   consent: z.literal(true, { error: "Necesitamos tu consentimiento para escribirte." }),
   website: z.string().trim().max(0).optional().default("")
 });
 
+export const bookingEventTypes = [
+  "Festival",
+  "Club o antro",
+  "Evento privado",
+  "Evento de marca",
+  "Universidad",
+  "Otro"
+] as const;
+
+export const bookingBudgetRanges = [
+  "Por definir",
+  "Menos de $30,000 MXN",
+  "$30,000 - $60,000 MXN",
+  "$60,000 - $120,000 MXN",
+  "Mas de $120,000 MXN"
+] as const;
+
 export const bookingRequestSchema = z.object({
   name: z.string().trim().min(2, "Escribe tu nombre.").max(140),
-  company: z.string().trim().min(2, "Escribe la empresa o proyecto.").max(160),
+  company: z.string().trim().max(160).optional().default(""),
   email: z.email("Escribe un correo válido.").max(180),
   phone: z.string().trim().min(8, "Agrega un teléfono o WhatsApp.").max(80),
   city: z.string().trim().min(2, "Escribe la ciudad.").max(120),
-  venue: z.string().trim().min(2, "Escribe el recinto o lugar.").max(160),
-  proposedDate: z.string().trim().min(4, "Agrega una fecha tentativa.").max(80),
-  eventType: z.string().trim().min(2, "Indica el tipo de evento.").max(120),
-  capacity: z.string().trim().min(1, "Indica el aforo estimado.").max(80),
-  budget: z.string().trim().min(1, "Indica un presupuesto aproximado.").max(80),
-  message: z.string().trim().min(10, "Agrega un poco más de contexto.").max(1600),
+  venue: z.string().trim().max(160).optional().default(""),
+  proposedDate: z.iso.date("Agrega una fecha tentativa."),
+  eventType: z.enum(bookingEventTypes, { error: "Indica el tipo de evento." }),
+  capacity: z.coerce.number().int("Indica el aforo con números.").min(1, "Indica el aforo estimado.").max(500000),
+  budget: z.enum(bookingBudgetRanges, { error: "Indica un presupuesto aproximado." }),
+  message: z.string().trim().max(1600).optional().default(""),
   consent: z.literal(true, { error: "Necesitamos tu consentimiento para contactarte." }),
   website: z.string().trim().max(0).optional().default("")
 });
@@ -42,6 +59,7 @@ export const checkoutItemSchema = z.object({
 });
 
 export const checkoutSchema = z.object({
+  idempotencyKey: z.uuid().optional(),
   items: z.array(checkoutItemSchema).min(1),
   customer: z.object({
     name: z.string().trim().min(2).max(140),

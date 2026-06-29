@@ -76,6 +76,8 @@ Auth:
 
 ## Vercel
 
+Revisa tambien `VERCEL_SETUP.md` para la tabla completa de variables y pruebas de produccion.
+
 - Importar repo.
 - Configurar todas las variables.
 - Build command: `npm run build`.

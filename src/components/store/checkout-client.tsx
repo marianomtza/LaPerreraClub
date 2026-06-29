@@ -1,7 +1,8 @@
 "use client";
 
 import { CreditCard, Minus, Plus, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { siteCopy } from "@/content/site-copy";
 import { useCart } from "@/components/store/cart-provider";
 import { trackEvent } from "@/lib/analytics";
 import { formatMoney } from "@/lib/money";
@@ -11,47 +12,58 @@ type CheckoutState = {
   message: string;
 };
 
-export function CheckoutClient() {
+export function CheckoutClient({ pickupEnabled = false }: { pickupEnabled?: boolean }) {
   const { items, updateQuantity, removeItem, clearCart } = useCart();
   const [state, setState] = useState<CheckoutState>({ status: "idle", message: "" });
+  const idempotencyKey = useRef("");
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.priceCents * item.quantity, 0), [items]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setState({ status: "loading", message: "Validando pedido..." });
+    if (state.status === "loading") return;
+
+    setState({ status: "loading", message: siteCopy.checkout.validating });
     trackEvent("checkout_start", { itemCount: items.length, subtotal });
 
     const form = event.currentTarget;
     const data = new FormData(form);
+    idempotencyKey.current ||= globalThis.crypto?.randomUUID?.() || `${new Date().getTime()}-${items.length}`;
 
-    const response = await fetch("/api/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        items: items.map((item) => ({ variantId: item.variantId, quantity: item.quantity })),
-        pickup: data.get("pickup") === "on",
-        customer: {
-          name: data.get("name"),
-          email: data.get("email"),
-          phone: data.get("phone"),
-          address: data.get("address"),
-          city: data.get("city"),
-          state: data.get("state"),
-          postalCode: data.get("postalCode"),
-          notes: data.get("notes")
-        }
-      })
-    });
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          idempotencyKey: idempotencyKey.current,
+          items: items.map((item) => ({ variantId: item.variantId, quantity: item.quantity })),
+          pickup: data.get("pickup") === "on",
+          customer: {
+            name: data.get("name"),
+            email: data.get("email"),
+            phone: data.get("phone"),
+            address: data.get("address"),
+            city: data.get("city"),
+            state: data.get("state"),
+            postalCode: data.get("postalCode"),
+            notes: data.get("notes")
+          }
+        })
+      });
 
-    const result = (await response.json()) as { message?: string; initPoint?: string };
+      const result = await readJson(response);
 
-    if (!response.ok || !result.initPoint) {
-      setState({ status: "error", message: result.message || "No se pudo iniciar el checkout." });
-      return;
+      if (!response.ok || !result.initPoint) {
+        idempotencyKey.current = "";
+        setState({ status: "error", message: result.message || siteCopy.checkout.startError });
+        return;
+      }
+
+      window.location.assign(result.initPoint);
+      window.setTimeout(() => clearCart(), 1000);
+    } catch {
+      idempotencyKey.current = "";
+      setState({ status: "error", message: siteCopy.global.system.genericError });
     }
-
-    clearCart();
-    window.location.assign(result.initPoint);
   }
 
   return (
@@ -59,8 +71,8 @@ export function CheckoutClient() {
       <section className="grid gap-3">
         {items.length === 0 ? (
           <div className="panel p-6">
-            <p className="font-black uppercase text-white">Tu carrito está vacío.</p>
-            <p className="mt-2 text-[var(--muted)]">Cuando haya productos publicados, agrégalos desde Tienda.</p>
+            <p className="font-black uppercase text-white">{siteCopy.checkout.emptyCartTitle}</p>
+            <p className="mt-2 text-[var(--muted)]">{siteCopy.checkout.emptyCartCopy}</p>
           </div>
         ) : (
           items.map((item) => (
@@ -104,20 +116,20 @@ export function CheckoutClient() {
         )}
         <div className="tear-rule" />
         <div className="flex items-center justify-between border-y border-white/15 py-4 font-black uppercase">
-          <span>Subtotal</span>
+          <span>{siteCopy.checkout.subtotal}</span>
           <span className="font-mono">{formatMoney(subtotal)}</span>
         </div>
       </section>
 
       <form className="panel grid gap-4 p-5" onSubmit={handleSubmit}>
-        <p className="font-mono text-xs font-black uppercase text-[var(--accent)]">Datos de entrega</p>
+        <p className="font-mono text-xs font-black uppercase text-[var(--accent)]">{siteCopy.checkout.deliveryData}</p>
         <div className="grid gap-2 md:grid-cols-2">
-          <CheckoutField label="Nombre" name="name" required />
-          <CheckoutField label="Correo" name="email" required type="email" />
-          <CheckoutField label="Teléfono" name="phone" required />
-          <CheckoutField label="Código postal" name="postalCode" required />
-          <CheckoutField label="Ciudad" name="city" required />
-          <CheckoutField label="Estado" name="state" required />
+          <CheckoutField autoComplete="name" label="Nombre" name="name" required />
+          <CheckoutField autoComplete="email" label="Correo" name="email" required type="email" />
+          <CheckoutField autoComplete="tel" label="Teléfono" name="phone" required />
+          <CheckoutField autoComplete="postal-code" label="Código postal" name="postalCode" required />
+          <CheckoutField autoComplete="address-level2" label="Ciudad" name="city" required />
+          <CheckoutField autoComplete="address-level1" label="Estado" name="state" required />
         </div>
         <div className="grid gap-2">
           <label className="text-sm font-bold uppercase" htmlFor="checkout-address">
@@ -125,6 +137,7 @@ export function CheckoutClient() {
           </label>
           <textarea
             className="focus-ring min-h-24 rounded-[8px] border border-white/15 bg-black/30 px-3 py-3"
+            autoComplete="street-address"
             id="checkout-address"
             name="address"
             required
@@ -140,30 +153,42 @@ export function CheckoutClient() {
             name="notes"
           />
         </div>
-        <label className="flex items-start gap-3 text-sm text-white/78">
-          <input className="mt-1" name="pickup" type="checkbox" />
-          Solicitar recolección si está habilitada.
-        </label>
+        {pickupEnabled ? (
+          <label className="flex items-start gap-3 text-sm text-white/78">
+            <input className="mt-1" name="pickup" type="checkbox" />
+            {siteCopy.checkout.pickup}
+          </label>
+        ) : null}
         <button
           className="focus-ring inline-flex min-h-12 items-center justify-center gap-2 rounded-[4px] bg-[var(--accent)] px-5 text-sm font-black uppercase text-white disabled:cursor-not-allowed disabled:opacity-50"
           disabled={items.length === 0 || state.status === "loading"}
           type="submit"
         >
           <CreditCard aria-hidden="true" size={18} />
-          Pagar con Mercado Pago
+          {siteCopy.checkout.pay}
         </button>
-        {state.message ? <p className="text-sm text-red-100" role="status">{state.message}</p> : null}
+        {state.message ? <p aria-live="polite" className="text-sm text-red-100" role="status">{state.message}</p> : null}
       </form>
     </div>
   );
 }
 
+async function readJson(response: Response) {
+  try {
+    return (await response.json()) as { message?: string; initPoint?: string };
+  } catch {
+    return {};
+  }
+}
+
 function CheckoutField({
+  autoComplete,
   label,
   name,
   required,
   type = "text"
 }: {
+  autoComplete?: string;
   label: string;
   name: string;
   required?: boolean;
@@ -176,6 +201,7 @@ function CheckoutField({
         {label}
       </label>
       <input
+        autoComplete={autoComplete}
         className="focus-ring min-h-11 rounded-[8px] border border-white/15 bg-black/30 px-3"
         id={id}
         name={name}

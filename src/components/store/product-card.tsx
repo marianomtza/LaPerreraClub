@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { siteCopy } from "@/content/site-copy";
 import type { ProductWithVariants } from "@/lib/content-types";
 import { formatMoney } from "@/lib/money";
 import { SmartImage } from "@/components/media/smart-image";
@@ -6,7 +7,11 @@ import { SmartImage } from "@/components/media/smart-image";
 export function ProductCard({ product }: { product: ProductWithVariants }) {
   const firstVariant = product.variants[0];
   const label =
-    product.status === "agotado" ? "Agotado" : product.status === "proximamente" ? "Próximamente" : "Disponible";
+    product.status === "agotado"
+      ? siteCopy.store.status.soldOut
+      : product.status === "proximamente"
+        ? siteCopy.store.status.comingSoon
+        : siteCopy.store.status.available;
 
   return (
     <article className="panel overflow-hidden transition hover:-translate-y-1 hover:border-[var(--accent)]">

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Download } from "lucide-react";
+import { siteCopy } from "@/content/site-copy";
 import { BandsintownDates } from "@/components/integrations/bandsintown-dates";
 import { BookingForm } from "@/components/forms/booking-form";
 import { CounterGrid } from "@/components/content/counter-grid";
@@ -11,19 +12,28 @@ import { getBookingSettings, getXosaSettings } from "@/lib/data";
 import { isSafeHref } from "@/lib/url";
 
 export const metadata: Metadata = {
-  title: "Booking",
-  description: "Portal profesional para solicitar presentaciones de XOSA y La Perrera Club."
+  title: siteCopy.booking.metadata.title,
+  description: siteCopy.booking.metadata.description,
+  alternates: {
+    canonical: "/booking"
+  }
 };
 
 export default async function BookingPage() {
   const [booking, xosa] = await Promise.all([getBookingSettings(), getXosaSettings()]);
+  const validMetrics = (xosa.metrics || []).filter((counter) => counter.label && counter.source && counter.updatedAt);
+  const bandsintownArtist = process.env.NEXT_PUBLIC_BANDSINTOWN_ARTIST_NAME;
+  const bandsintownAppId = process.env.NEXT_PUBLIC_BANDSINTOWN_APP_ID;
+  const hasBandsintownConfig = Boolean(bandsintownArtist && bandsintownAppId);
+  const pressKitIsDocument = booking.pressKitUrl && isSafeHref(booking.pressKitUrl) && /\.(pdf|zip)(\?|#|$)/i.test(booking.pressKitUrl);
+  const riderIsDocument = booking.riderUrl && isSafeHref(booking.riderUrl) && /\.pdf(\?|#|$)/i.test(booking.riderUrl);
 
   return (
     <main className="shell py-16">
       <section className="grid gap-8 border-b border-white/10 pb-16 lg:grid-cols-[0.82fr_1.18fr]">
         <div>
           <p className="w-fit rotate-[-1deg] bg-[var(--paper)] px-3 py-1 font-mono text-xs font-black uppercase text-black">
-            Booking profesional
+            {siteCopy.booking.heroEyebrow}
           </p>
           <div className="mt-5 max-w-xl">
             <XosaMark priority />
@@ -32,9 +42,12 @@ export default async function BookingPage() {
             La Perrera <span className="block text-[var(--accent)]">en vivo</span>
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-[var(--muted)]">
-            {booking.intro ||
+              {booking.intro ||
               xosa.showDescription ||
-              "Solicitudes para shows, DJ sets, experiencias, colaboraciones y presentaciones profesionales."}
+              siteCopy.booking.fallbackIntro}
+          </p>
+          <p className="mt-4 max-w-2xl text-sm font-bold uppercase text-white/72">
+            {booking.responseTime || siteCopy.booking.responseTime}
           </p>
           <div className="poster-frame mt-8 overflow-hidden rounded-[8px] bg-black">
             <SmartImage
@@ -47,16 +60,16 @@ export default async function BookingPage() {
             />
           </div>
           <div className="mt-7 flex flex-wrap gap-3">
-            {booking.pressKitUrl && isSafeHref(booking.pressKitUrl) ? (
-              <Link className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-[8px] border border-white/15 px-4 text-sm font-black uppercase" href={booking.pressKitUrl}>
+            {pressKitIsDocument ? (
+              <Link className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-[8px] border border-white/15 px-4 text-sm font-black uppercase" href={booking.pressKitUrl || ""}>
                 <Download aria-hidden="true" size={16} />
-                Press kit
+                {siteCopy.xosa.pressKit}
               </Link>
             ) : null}
-            {booking.riderUrl && isSafeHref(booking.riderUrl) ? (
-              <Link className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-[8px] border border-white/15 px-4 text-sm font-black uppercase" href={booking.riderUrl}>
+            {riderIsDocument ? (
+              <Link className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-[8px] border border-white/15 px-4 text-sm font-black uppercase" href={booking.riderUrl || ""}>
                 <Download aria-hidden="true" size={16} />
-                Rider técnico
+                {siteCopy.xosa.rider}
               </Link>
             ) : null}
           </div>
@@ -79,18 +92,19 @@ export default async function BookingPage() {
         </div>
       </section>
 
-      <section className="border-b border-white/10 py-16">
-        <SectionHeading eyebrow="Métricas" title="Datos para promotores" />
-        <CounterGrid counters={xosa.metrics} />
-      </section>
+      {validMetrics.length > 0 ? (
+        <section className="border-b border-white/10 py-16">
+          <SectionHeading eyebrow={siteCopy.xosa.metricsEyebrow} title="Datos para promotores" />
+          <CounterGrid counters={validMetrics} />
+        </section>
+      ) : null}
 
-      <section className="py-16">
-        <SectionHeading eyebrow="Presentaciones" title="Fechas publicadas" />
-        <BandsintownDates
-          appId={process.env.NEXT_PUBLIC_BANDSINTOWN_APP_ID}
-          artistName={process.env.NEXT_PUBLIC_BANDSINTOWN_ARTIST_NAME}
-        />
-      </section>
+      {hasBandsintownConfig ? (
+        <section className="py-16">
+          <SectionHeading eyebrow="Presentaciones" title="Fechas publicadas" />
+          <BandsintownDates appId={bandsintownAppId} artistName={bandsintownArtist} />
+        </section>
+      ) : null}
     </main>
   );
 }

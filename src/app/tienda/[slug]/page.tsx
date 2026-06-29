@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { siteCopy } from "@/content/site-copy";
 import { AddToCartButton } from "@/components/store/add-to-cart-button";
 import { SmartImage } from "@/components/media/smart-image";
 import { getProductBySlug } from "@/lib/data";
@@ -14,6 +15,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     description: product.description || `Producto publicado en La Perrera Club.`,
     openGraph: {
       images: product.image_url ? [{ url: product.image_url }] : []
+    },
+    alternates: {
+      canonical: `/tienda/${product.slug}`
     }
   };
 }
@@ -48,16 +52,19 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <div className="mt-8 grid gap-3">
           {product.variants.map((variant) => {
             const soldOut = product.status === "agotado" || (variant.track_inventory && variant.stock_quantity <= 0);
+            const availability = soldOut
+              ? siteCopy.store.status.soldOut
+              : product.status === "proximamente"
+                ? siteCopy.store.status.comingSoon
+                : variant.track_inventory && variant.stock_quantity <= 5
+                  ? siteCopy.store.status.lowStock
+                  : siteCopy.store.status.available;
             return (
               <div className="panel flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between" key={variant.id}>
                 <div>
                   <p className="font-black uppercase">{variant.name}</p>
                   <p className="font-mono text-lg">{formatMoney(variant.price_cents, variant.currency)}</p>
-                  {variant.track_inventory ? (
-                    <p className="text-sm text-[var(--muted)]">
-                      {variant.stock_quantity > 0 ? `${variant.stock_quantity} disponibles` : "Agotado"}
-                    </p>
-                  ) : null}
+                  <p className="text-sm text-[var(--muted)]">{availability}</p>
                 </div>
                 <AddToCartButton
                   disabled={!available || soldOut}

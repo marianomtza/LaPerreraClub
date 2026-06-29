@@ -1,3 +1,5 @@
+import { getSiteUrl } from "@/lib/env";
+
 export function isValidHttpUrl(value: string | null | undefined) {
   if (!value) return false;
 
@@ -28,6 +30,5 @@ export function normalizeSlug(value: string) {
 
 export function toAbsoluteUrl(path: string) {
   if (isValidHttpUrl(path)) return path;
-  const base = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "http://localhost:3000";
-  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+  return `${getSiteUrl()}${path.startsWith("/") ? path : `/${path}`}`;
 }

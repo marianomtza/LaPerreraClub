@@ -63,6 +63,6 @@ npm run build
 2. Crear bucket público `media`.
 3. Configurar variables en Vercel.
 4. Configurar Mercado Pago, Resend y Bandsintown.
-5. Desplegar en Vercel con `npm run build`.
+5. Revisar `VERCEL_SETUP.md` y desplegar en Vercel con `npm run build`.
 
 No se guardan secretos en el repositorio.

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Menu, ShoppingBag, X } from "lucide-react";
 import { useState } from "react";
+import { siteCopy } from "@/content/site-copy";
 import { CartCount } from "@/components/store/cart-count";
 
 type NavItem = {
@@ -45,7 +46,7 @@ export function MobileNav({ items }: { items: NavItem[] }) {
             >
               <span className="flex items-center gap-2">
                 <ShoppingBag aria-hidden="true" size={20} />
-                Carrito
+                {siteCopy.global.navigation.cart}
               </span>
               <CartCount />
             </Link>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { siteCopy } from "@/content/site-copy";
 
 export const metadata: Metadata = {
   title: "Checkout exitoso",
@@ -7,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default function CheckoutSuccessPage() {
-  return <CheckoutState title="Pago recibido" copy="Si Mercado Pago aprobó la operación, el pedido quedará confirmado por webhook y recibirás un correo cuando Resend esté configurado." />;
+  return <CheckoutState title={siteCopy.checkout.success.title} copy={siteCopy.checkout.success.copy} />;
 }
 
 function CheckoutState({ title, copy }: { title: string; copy: string }) {

@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getAdminEmails, getSiteUrl, isProduction } from "@/lib/env";
+import { siteCopy } from "@/content/site-copy";
+import { getSiteUrl, isAdminEmailAllowed, isProduction } from "@/lib/env";
 import { getPublicSupabase } from "@/lib/supabase/server";
 
 const ACCESS_COOKIE = "lpc-admin-access";
@@ -12,9 +13,19 @@ export type AdminUser = {
 };
 
 export async function requestAdminMagicLink(email: string) {
+  const genericResponse = {
+    ok: true,
+    message: siteCopy.admin.genericMagicLink
+  };
+
+  if (!isAdminEmailAllowed(email)) {
+    return genericResponse;
+  }
+
   const supabase = getPublicSupabase();
   if (!supabase) {
-    return { ok: false, message: "Supabase Auth no está configurado." };
+    console.error("Admin magic link requested but Supabase public auth is not configured.");
+    return { ok: false, message: siteCopy.admin.unavailable };
   }
 
   const { error } = await supabase.auth.signInWithOtp({
@@ -25,13 +36,11 @@ export async function requestAdminMagicLink(email: string) {
   });
 
   if (error) {
-    return { ok: false, message: error.message };
+    console.error("Admin magic link request failed.", error.message);
+    return { ok: false, message: siteCopy.admin.unavailable };
   }
 
-  return {
-    ok: true,
-    message: "Revisa tu correo para entrar al panel."
-  };
+  return genericResponse;
 }
 
 export async function setAdminSessionCookies(accessToken: string, refreshToken: string) {
@@ -66,8 +75,7 @@ export async function getAdminUser(): Promise<AdminUser | null> {
   if (error || !data.user.email) return null;
 
   const email = data.user.email.toLowerCase();
-  const adminEmails = getAdminEmails();
-  if (adminEmails.length > 0 && !adminEmails.includes(email)) return null;
+  if (!isAdminEmailAllowed(email)) return null;
 
   return {
     id: data.user.id,

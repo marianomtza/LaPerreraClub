@@ -4,6 +4,7 @@ import Link from "next/link";
 import Script from "next/script";
 import { CalendarDays, ExternalLink } from "lucide-react";
 import { useMemo, useState } from "react";
+import { siteCopy } from "@/content/site-copy";
 
 let scriptLoaded = false;
 
@@ -21,20 +22,7 @@ export function BandsintownDates({
     return `https://www.bandsintown.com/a/${encodeURIComponent(artistName)}`;
   }, [artistName]);
 
-  if (!artistName || !appId) {
-    return (
-    <div className="panel flex items-start gap-3 p-5 text-white/78">
-      <CalendarDays aria-hidden="true" className="mt-1 shrink-0 text-[var(--accent)]" size={20} />
-      <div>
-        <p className="font-black uppercase text-white">Próximas fechas por anunciar.</p>
-        <p className="mt-1 text-sm text-[var(--muted)]">
-          Configura Bandsintown en el panel o mediante variables de entorno.
-        </p>
-        <div className="tear-rule mt-4 w-48" />
-      </div>
-    </div>
-    );
-  }
+  if (!artistName || !appId) return null;
 
   return (
     <div className="panel overflow-hidden p-5">
@@ -51,7 +39,7 @@ export function BandsintownDates({
       {status !== "ready" ? (
         <div className="flex items-center gap-3 text-sm text-[var(--muted)]">
           <CalendarDays aria-hidden="true" size={18} />
-          {status === "error" ? "No se pudo cargar Bandsintown." : "Cargando fechas desde Bandsintown..."}
+          {status === "error" ? siteCopy.bandsintown.error : siteCopy.bandsintown.loading}
         </div>
       ) : null}
       <a
@@ -78,7 +66,7 @@ export function BandsintownDates({
           rel="noreferrer"
           target="_blank"
         >
-          Perfil en Bandsintown
+          {siteCopy.bandsintown.profile}
           <ExternalLink aria-hidden="true" size={14} />
         </Link>
       </div>

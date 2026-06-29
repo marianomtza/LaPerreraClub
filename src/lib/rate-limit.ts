@@ -1,3 +1,6 @@
+import { isProduction } from "@/lib/env";
+import { getServiceSupabase } from "@/lib/supabase/server";
+
 type Bucket = {
   count: number;
   resetAt: number;
@@ -5,7 +8,7 @@ type Bucket = {
 
 const buckets = new Map<string, Bucket>();
 
-export function checkRateLimit(key: string, limit: number, windowMs: number) {
+function checkMemoryRateLimit(key: string, limit: number, windowMs: number) {
   const now = Date.now();
   const existing = buckets.get(key);
 
@@ -18,6 +21,29 @@ export function checkRateLimit(key: string, limit: number, windowMs: number) {
 
   existing.count += 1;
   return true;
+}
+
+export async function checkRateLimit(key: string, limit: number, windowMs: number) {
+  if (!isProduction()) return checkMemoryRateLimit(key, limit, windowMs);
+
+  const supabase = getServiceSupabase();
+  if (!supabase) {
+    console.error("Durable rate limit unavailable: Supabase service client is not configured.");
+    return false;
+  }
+
+  const { data, error } = await supabase.rpc("check_rate_limit", {
+    p_key: key,
+    p_limit: limit,
+    p_window_seconds: Math.ceil(windowMs / 1000)
+  });
+
+  if (error) {
+    console.error("Durable rate limit failed.", error.message);
+    return false;
+  }
+
+  return data === true;
 }
 
 export function getRequestIp(request: Request) {

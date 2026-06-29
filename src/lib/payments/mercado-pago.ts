@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { siteCopy } from "@/content/site-copy";
 import { getServerEnv, getSiteUrl } from "@/lib/env";
 import { formatMoney } from "@/lib/money";
 
@@ -18,7 +19,8 @@ export type CreatePreferenceInput = {
 export async function createMercadoPagoPreference(input: CreatePreferenceInput) {
   const accessToken = getServerEnv("MERCADO_PAGO_ACCESS_TOKEN");
   if (!accessToken) {
-    return { ok: false as const, message: "Mercado Pago no está configurado." };
+    console.error("Mercado Pago preference blocked: access token is not configured.");
+    return { ok: false as const, message: siteCopy.checkout.startError };
   }
 
   const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
@@ -68,7 +70,7 @@ export async function createMercadoPagoPreference(input: CreatePreferenceInput) 
   if (!response.ok) {
     const message = await response.text();
     console.error("Mercado Pago rechazó la preferencia.", { status: response.status, message });
-    return { ok: false as const, message: "No se pudo iniciar Mercado Pago." };
+    return { ok: false as const, message: siteCopy.checkout.startError };
   }
 
   const data = (await response.json()) as { id: string; init_point?: string; sandbox_init_point?: string };
@@ -128,5 +130,6 @@ export async function getMercadoPagoPayment(paymentId: string) {
     status: string;
     external_reference?: string;
     transaction_amount?: number;
+    currency_id?: string;
   };
 }

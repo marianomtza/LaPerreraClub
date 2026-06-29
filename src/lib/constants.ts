@@ -7,12 +7,14 @@ export const RESERVED_SLUGS = [
   "api",
   "contacto",
   "privacidad",
-  "terminos"
+  "terminos",
+  "envios-y-devoluciones"
 ] as const;
 
 export const ORDER_STATUSES = [
   "pendiente",
   "pagado",
+  "en_revision",
   "en_preparacion",
   "enviado",
   "entregado",
@@ -23,9 +25,11 @@ export const ORDER_STATUSES = [
 export const PAYMENT_STATUSES = [
   "pendiente",
   "aprobado",
+  "en_proceso",
   "rechazado",
   "cancelado",
-  "reembolsado"
+  "reembolsado",
+  "contracargo"
 ] as const;
 
 export const PUBLICATION_STATES = [

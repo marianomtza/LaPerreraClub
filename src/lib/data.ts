@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { unstable_noStore as noStore } from "next/cache";
+import { siteCopy } from "@/content/site-copy";
 import { RESERVED_SLUGS } from "@/lib/constants";
 import type {
   BookingSettings,
@@ -25,10 +26,10 @@ type SettingRow = {
 const DEFAULT_HOME_SETTINGS: HomeSettings = {
   hero: {
     title: "LA PERRERA CLUB",
-    eyebrow: "XOSA / LA PERRERA / CANDELA",
-    primaryLabel: "Entrar al club",
+    eyebrow: siteCopy.home.hero.eyebrow,
+    primaryLabel: siteCopy.home.hero.primaryLabel,
     primaryHref: "/#club",
-    secondaryLabel: "Ver XOSA",
+    secondaryLabel: siteCopy.home.hero.secondaryLabel,
     secondaryHref: "/xosa",
     videoUrl: "/LAPERRERAANIM0001-0160.mp4",
     posterUrl: "/VISUALSHOW1-poster.webp",
@@ -55,12 +56,12 @@ const DEFAULT_HOME_SETTINGS: HomeSettings = {
 
 const DEFAULT_XOSA_SETTINGS: XosaSettings = {
   title: "XOSA",
-  bio: "Proyecto musical y figura principal actual de La Perrera Club: show, club, reggaetón mexicano y cultura digital desde la noche.",
+  bio: "Proyecto musical y figura principal actual de La Perrera Club: show, club, reggaeton mexicano y cultura digital desde la noche.",
   heroImageUrl: "/assets/booking-xosa.webp",
   showDescription: "Presentación enfocada en club, perreo y energía directa con la audiencia.",
   showDuration: "A confirmar por evento",
   showFormat: "Show / DJ set / experiencia club",
-  pressKitUrl: "/assets/booking-xosa.webp",
+  pressKitUrl: "",
   release: {
     title: "La Perrera presenta: Vol. I",
     description: "Lanzamiento visual y musical del universo La Perrera.",
@@ -88,13 +89,15 @@ const DEFAULT_XOSA_SETTINGS: XosaSettings = {
 const DEFAULT_BOOKING_SETTINGS: BookingSettings = {
   intro:
     "Portal profesional para contratar a XOSA y activar experiencias de La Perrera. La solicitud no confirma disponibilidad ni cotización automática.",
-  pressKitUrl: "/assets/booking-xosa.webp",
-  assetsUrl: "/assets/booking-xosa.webp"
+  responseTime: siteCopy.booking.responseTime,
+  pressKitUrl: "",
+  riderUrl: "",
+  assetsUrl: ""
 };
 
 const DEFAULT_STORE_SETTINGS: StoreSettings = {
-  emptyMessage:
-    "El drop todavía no está publicado. Cuando haya productos reales desde el panel, aparecerán aquí sin cambiar código."
+  emptyMessage: siteCopy.store.empty,
+  pickupEnabled: false
 };
 
 const DEFAULT_SEO_SETTINGS: SeoSettings = {
@@ -257,6 +260,24 @@ export async function getSpecialPage(slug: string) {
       .filter((block) => block.is_active)
       .sort((a, b) => a.sort_order - b.sort_order)
   } satisfies SpecialPage;
+}
+
+export async function getPublishedSpecialPages() {
+  noStore();
+  const supabase = getPublicSupabase();
+  if (!supabase) return [] as Array<{ slug: string; updated_at?: string; created_at?: string }>;
+
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("special_pages")
+    .select("slug,updated_at,created_at")
+    .eq("state", "publicado")
+    .or(`published_at.is.null,published_at.lte.${now}`)
+    .or(`expires_at.is.null,expires_at.gt.${now}`)
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return [];
+  return data as Array<{ slug: string; updated_at?: string; created_at?: string }>;
 }
 
 export async function getAdminCollections() {

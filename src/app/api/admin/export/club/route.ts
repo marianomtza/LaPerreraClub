@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { siteCopy } from "@/content/site-copy";
 import { requireAdminUser } from "@/lib/auth";
 import { getServiceSupabase } from "@/lib/supabase/server";
 
@@ -10,10 +11,16 @@ function csvCell(value: unknown) {
 export async function GET() {
   await requireAdminUser();
   const supabase = getServiceSupabase();
-  if (!supabase) return NextResponse.json({ message: "Supabase no está configurado." }, { status: 503 });
+  if (!supabase) {
+    console.error("Club export blocked: Supabase service client is not configured.");
+    return NextResponse.json({ message: siteCopy.global.system.unavailable }, { status: 503 });
+  }
 
   const { data, error } = await supabase.from("club_submissions").select("*").order("created_at", { ascending: false });
-  if (error) return NextResponse.json({ message: error.message }, { status: 500 });
+  if (error) {
+    console.error("Club export failed.", error.message);
+    return NextResponse.json({ message: siteCopy.global.system.genericError }, { status: 500 });
+  }
 
   const headers = ["nombre", "correo", "ciudad", "red", "origen", "fecha"];
   const rows = (data || []).map((row) =>

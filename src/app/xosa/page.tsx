@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Briefcase, Download } from "lucide-react";
+import { siteCopy } from "@/content/site-copy";
 import { BandsintownDates } from "@/components/integrations/bandsintown-dates";
 import { CounterGrid } from "@/components/content/counter-grid";
 import { PublicationList } from "@/components/content/publication-list";
@@ -14,28 +15,42 @@ import { isSafeHref, isValidHttpUrl } from "@/lib/url";
 export async function generateMetadata(): Promise<Metadata> {
   const xosa = await getXosaSettings();
   return {
-    title: xosa.title || "XOSA",
-    description: xosa.bio || "Proyecto musical principal de La Perrera Club."
+    title: xosa.title || siteCopy.xosa.metadata.title,
+    description: xosa.bio || siteCopy.xosa.metadata.description,
+    openGraph: {
+      title: xosa.title || siteCopy.xosa.metadata.title,
+      description: xosa.bio || siteCopy.xosa.metadata.description,
+      images: xosa.heroImageUrl ? [{ url: xosa.heroImageUrl }] : []
+    },
+    alternates: {
+      canonical: "/xosa"
+    }
   };
 }
 
 export default async function XosaPage() {
   const [xosa, publications] = await Promise.all([getXosaSettings(), getActivePublications("xosa")]);
   const release = xosa.release;
+  const validMetrics = (xosa.metrics || []).filter((counter) => counter.label && counter.source && counter.updatedAt);
+  const bandsintownArtist = process.env.NEXT_PUBLIC_BANDSINTOWN_ARTIST_NAME;
+  const bandsintownAppId = process.env.NEXT_PUBLIC_BANDSINTOWN_APP_ID;
+  const hasBandsintownConfig = Boolean(bandsintownArtist && bandsintownAppId);
+  const pressKitIsDocument = xosa.pressKitUrl && isSafeHref(xosa.pressKitUrl) && /\.(pdf|zip)(\?|#|$)/i.test(xosa.pressKitUrl);
+  const riderIsDocument = xosa.riderUrl && isSafeHref(xosa.riderUrl) && /\.pdf(\?|#|$)/i.test(xosa.riderUrl);
 
   return (
     <main className="shell py-16">
       <section className="grid min-h-[72svh] gap-8 border-b border-white/10 pb-16 lg:grid-cols-[1fr_0.9fr] lg:items-end">
         <div>
           <p className="w-fit rotate-[-1deg] bg-[var(--paper)] px-3 py-1 font-mono text-xs font-black uppercase text-black">
-            Proyecto musical
+            {siteCopy.xosa.heroEyebrow}
           </p>
           <div className="mt-5 max-w-3xl">
             <XosaMark priority />
           </div>
           <h1 className="sr-only">{xosa.title || "XOSA"}</h1>
           <p className="mt-6 max-w-2xl text-xl text-[var(--muted)]">
-            {xosa.bio || "Figura principal actual de La Perrera Club."}
+            {xosa.bio || siteCopy.xosa.fallbackBio}
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link
@@ -43,7 +58,7 @@ export default async function XosaPage() {
               href="/booking"
             >
               <Briefcase aria-hidden="true" size={18} />
-              Solicitar booking
+              {siteCopy.xosa.bookingCta}
             </Link>
             <StreamingLinks links={xosa.links || []} />
           </div>
@@ -66,7 +81,7 @@ export default async function XosaPage() {
 
       {release?.title ? (
         <section className="grid gap-8 border-b border-white/10 py-16 lg:grid-cols-[0.8fr_1.2fr]">
-          <SectionHeading eyebrow="Lanzamiento actual" title={release.title} copy={release.description} />
+          <SectionHeading eyebrow={siteCopy.xosa.releaseEyebrow} title={release.title} copy={release.description} />
           <div className="grid gap-4">
             <StreamingLinks links={releaseLinks(release)} />
             <SpotifyEmbed title={release.title} url={release.spotifyUrl} />
@@ -75,29 +90,30 @@ export default async function XosaPage() {
         </section>
       ) : null}
 
-      <section className="border-b border-white/10 py-16">
-        <SectionHeading eyebrow="Fechas" title="Presentaciones" />
-        <BandsintownDates
-          appId={process.env.NEXT_PUBLIC_BANDSINTOWN_APP_ID}
-          artistName={process.env.NEXT_PUBLIC_BANDSINTOWN_ARTIST_NAME}
-        />
-      </section>
+      {hasBandsintownConfig ? (
+        <section className="border-b border-white/10 py-16">
+          <SectionHeading eyebrow={siteCopy.xosa.datesEyebrow} title={siteCopy.xosa.datesTitle} />
+          <BandsintownDates appId={bandsintownAppId} artistName={bandsintownArtist} />
+        </section>
+      ) : null}
 
-      <section className="border-b border-white/10 py-16">
-        <SectionHeading eyebrow="Métricas" title="Datos verificables" copy="Los números se muestran solo cuando tienen fuente y fecha de actualización." />
-        <CounterGrid counters={xosa.metrics} />
-      </section>
+      {validMetrics.length > 0 ? (
+        <section className="border-b border-white/10 py-16">
+          <SectionHeading eyebrow={siteCopy.xosa.metricsEyebrow} title={siteCopy.xosa.metricsTitle} copy={siteCopy.xosa.metricsCopy} />
+          <CounterGrid counters={validMetrics} />
+        </section>
+      ) : null}
 
       {xosa.videos?.some((video) => isValidHttpUrl(video.url)) ? (
         <section className="border-b border-white/10 py-16">
-          <SectionHeading eyebrow="Video" title="Piezas audiovisuales" />
+          <SectionHeading eyebrow={siteCopy.xosa.videoEyebrow} title={siteCopy.xosa.videoTitle} />
           <StreamingLinks links={xosa.videos} />
         </section>
       ) : null}
 
       {xosa.photos?.some((photo) => isSafeHref(photo.url)) ? (
         <section className="border-b border-white/10 py-16">
-          <SectionHeading eyebrow="Fotos" title="Selección visual" />
+          <SectionHeading eyebrow={siteCopy.xosa.photosEyebrow} title={siteCopy.xosa.photosTitle} />
           <div className="grid gap-4 md:grid-cols-3">
             {xosa.photos
               .filter((photo) => isSafeHref(photo.url))
@@ -117,7 +133,7 @@ export default async function XosaPage() {
 
       {publications.length > 0 ? (
         <section className="border-b border-white/10 py-16">
-          <SectionHeading eyebrow="Actual" title="Publicaciones" />
+          <SectionHeading eyebrow={siteCopy.xosa.postsEyebrow} title={siteCopy.xosa.postsTitle} />
           <PublicationList publications={publications} />
         </section>
       ) : null}
@@ -125,13 +141,19 @@ export default async function XosaPage() {
       <section className="grid gap-5 py-16 md:grid-cols-[1fr_auto] md:items-center">
         <div>
           <p className="font-mono text-xs uppercase text-[var(--accent)]">Booking</p>
-          <h2 className="mt-3 text-4xl font-black uppercase leading-none">Press kit, rider y contacto profesional</h2>
+          <h2 className="mt-3 text-4xl font-black uppercase leading-none">{siteCopy.xosa.professionalTitle}</h2>
         </div>
         <div className="flex flex-wrap gap-3">
-          {xosa.pressKitUrl && isSafeHref(xosa.pressKitUrl) ? (
-            <Link className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-[8px] border border-white/15 px-4 text-sm font-black uppercase" href={xosa.pressKitUrl}>
+          {pressKitIsDocument ? (
+            <Link className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-[8px] border border-white/15 px-4 text-sm font-black uppercase" href={xosa.pressKitUrl || ""}>
               <Download aria-hidden="true" size={16} />
-              Press kit
+              {siteCopy.xosa.pressKit}
+            </Link>
+          ) : null}
+          {riderIsDocument ? (
+            <Link className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-[8px] border border-white/15 px-4 text-sm font-black uppercase" href={xosa.riderUrl || ""}>
+              <Download aria-hidden="true" size={16} />
+              {siteCopy.xosa.rider}
             </Link>
           ) : null}
           <Link

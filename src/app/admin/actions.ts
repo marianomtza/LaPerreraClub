@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { siteCopy } from "@/content/site-copy";
 import { clearAdminSession, requestAdminMagicLink, requireAdminUser } from "@/lib/auth";
 import { RESERVED_SLUGS } from "@/lib/constants";
 import { toCentsFromPesos } from "@/lib/money";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { normalizeSlug } from "@/lib/url";
 import { getServiceSupabase } from "@/lib/supabase/server";
 import { bookingStatusSchema, productSchema, publicationSchema, specialPageSchema } from "@/lib/validation";
@@ -28,12 +30,15 @@ function redirectAdmin(message: string, type: "message" | "error" = "message"): 
 async function serviceClientOrRedirect() {
   await requireAdminUser();
   const supabase = getServiceSupabase();
-  if (!supabase) redirectAdmin("Supabase Service Role no está configurado.", "error");
+  if (!supabase) redirectAdmin(siteCopy.admin.serviceUnavailable, "error");
   return supabase;
 }
 
 export async function loginAction(formData: FormData) {
   const email = value(formData, "email");
+  if (!(await checkRateLimit(`admin-login:${email.toLowerCase()}`, 5, 60_000))) {
+    redirectAdmin(siteCopy.global.system.rateLimited, "error");
+  }
   const result = await requestAdminMagicLink(email);
   redirectAdmin(result.message, result.ok ? "message" : "error");
 }
@@ -61,7 +66,7 @@ export async function upsertSettingAction(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/xosa");
   revalidatePath("/booking");
-  redirectAdmin("Ajuste guardado.");
+  redirectAdmin(siteCopy.admin.saved);
 }
 
 export async function createPublicationAction(formData: FormData) {
