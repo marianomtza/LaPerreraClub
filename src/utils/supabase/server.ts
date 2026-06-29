@@ -6,9 +6,13 @@ const supabaseKey =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 export const createClient = async () => {
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error("Supabase public env vars are missing.");
+  }
+
   const cookieStore = await cookies();
 
-  return createServerClient(supabaseUrl!, supabaseKey!, {
+  return createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
